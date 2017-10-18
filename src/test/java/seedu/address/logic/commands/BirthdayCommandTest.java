@@ -135,5 +135,4 @@ public class BirthdayCommandTest {
         birthdayCommand.setData(model, new CommandHistory(), new UndoRedoStack());
         return birthdayCommand;
     }
-    
 }

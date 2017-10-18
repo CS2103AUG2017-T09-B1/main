@@ -29,18 +29,4 @@ public class Birthday {
         return value.hashCode();
     }
 
-    public String day;
-    public String month;
-    public String year;
-    public String age;
-
-    public String getAge() {
-        day =  this.value.substring(0,2);
-        month = this.value.substring(3,5);
-        year = this.value.substring(6,10);
-        age = year + month + day;
-
-        return age;
-    }
-
 }
