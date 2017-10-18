@@ -28,7 +28,7 @@ public class BirthdayCommand extends UndoableCommand {
             + "Parameters: INDEX (must be a positive integer) "
             + PREFIX_BIRTHDAY + "[dd/mm/yyyy]\n"
             + "Example: " + COMMAND_WORD + " 1 "
-            + PREFIX_BIRTHDAY + "[20/11/1995]\n";
+            + PREFIX_BIRTHDAY + "20/11/1995\n";
 
     public static final String MESSAGE_ADD_BIRTHDAY_SUCCESS = "Added birthday to Person: %1$s";
     public static final String MESSAGE_DELETE_BIRTHDAY_SUCCESS = "Removed birthday from Person: %1$s";

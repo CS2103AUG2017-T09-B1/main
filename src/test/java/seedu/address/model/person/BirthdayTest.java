@@ -15,8 +15,8 @@ public class BirthdayTest {
         assertTrue(birthday.equals(birthday));
 
         // same values -> returns true
-        Birthday birthdayCopy = new Birthday(birthday.value);
-        assertTrue(birthday.equals(birthdayCopy));
+        Birthday birthdayCopy = new Birthday("01/02/1994");
+        assertTrue(birthday.toString().equals(birthdayCopy.toString()));
 
         // different types -> returns false
         assertFalse(birthday.equals(1));

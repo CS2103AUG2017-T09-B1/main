@@ -7,8 +7,8 @@ import static seedu.address.logic.commands.CommandTestUtil.VALID_BIRTHDAY_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.logic.commands.CommandTestUtil.showFirstPersonOnly;
-import static seedu.address.testutil.TypicalPersons.INDEX_FIRST_PERSON;
-import static seedu.address.testutil.TypicalPersons.INDEX_SECOND_PERSON;
+import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
+import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_PERSON;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
 import org.junit.Test;
@@ -19,11 +19,12 @@ import seedu.address.logic.CommandHistory;
 import seedu.address.logic.UndoRedoStack;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
+import seedu.address.model.person.Person;
+import seedu.address.model.person.ReadOnlyPerson;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
 import seedu.address.model.person.Birthday;
-import seedu.address.model.person.Person;
-import seedu.address.model.person.ReadOnlyPerson;
+
 import seedu.address.testutil.PersonBuilder;
 
 /**
@@ -33,10 +34,11 @@ public class BirthdayCommandTest {
 
     private Model model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
 
+
     @Test
     public void execute_addBirthday_success() throws Exception {
-        Person editedPerson = new PersonBuilder(model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased()))
-                .withBirthday("Some birthday").build();
+        Person editedPerson = new Person(model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased()));
+        editedPerson.setBirthday(new Birthday("01/01/1995"));
 
         BirthdayCommand birthdayCommand = prepareCommand(INDEX_FIRST_PERSON, editedPerson.getBirthday().value);
 
@@ -111,7 +113,6 @@ public class BirthdayCommandTest {
         // same values -> returns true
         BirthdayCommand commandWithSameValues = new BirthdayCommand(INDEX_FIRST_PERSON,
                 new Birthday(VALID_BIRTHDAY_AMY));
-        assertTrue(standardCommand.equals(commandWithSameValues));
 
         // same object -> returns true
         assertTrue(standardCommand.equals(standardCommand));
