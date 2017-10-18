@@ -2,7 +2,10 @@ package seedu.address.model.person;
 
 import java.util.Comparator;
 
-public class AgeComparator implements Comparator<ReadOnlyPerson>{
+/**
+ * Compares Age of ReadOnlyPerson
+ */
+public class AgeComparator implements Comparator<ReadOnlyPerson> {
 
     @Override
     public int compare(ReadOnlyPerson firstNum, ReadOnlyPerson secondNum) {
