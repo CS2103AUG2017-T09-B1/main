@@ -170,7 +170,7 @@ public class ModelManager extends ComponentManager implements Model {
      */
     public void sortListByAge(ArrayList<ReadOnlyPerson> contactList) throws CommandException {
         contactList.addAll(filteredPersons);
-        Collections.sort(contactList, ReadOnlyPerson.COMPARE_BY_AGE);
+        Collections.sort(contactList, COMPARE_BY_AGE);
 
         try {
             addressBook.setPersons(contactList);
@@ -180,19 +180,68 @@ public class ModelManager extends ComponentManager implements Model {
         }
     }
 
+    Comparator<ReadOnlyPerson> COMPARE_BY_AGE = new Comparator<ReadOnlyPerson>() {
+        public int compare(ReadOnlyPerson firstNum, ReadOnlyPerson secondNum) {
+            String newFirstNum = getNewStringAgeFormat(firstNum);
+            String newSecondNum = getNewStringAgeFormat(secondNum);
+            if (newFirstNum.equals("") || newSecondNum.equals("")) {
+                return newSecondNum.compareTo(newFirstNum);
+            } else {
+                return newFirstNum.compareTo(newSecondNum);
+            }
+        }
+    };
+
+    static String getNewStringAgeFormat(ReadOnlyPerson person) {
+        if (person.getBirthday().toString().equals("")) {
+            return "";
+        } else {
+            String numInString = person.getBirthday().toString();    // Converts birthday to String type
+            String dayForNum = numInString.substring(0, 2);        // Index of day in dd/mm/yyyy
+            String monthForNum = numInString.substring(3, 5);      // Index of month in dd/mm/yyyy
+            String yearForNum = numInString.substring(6, 10);      // Index of year in dd/mm/yyyy
+            return yearForNum + monthForNum + dayForNum;           // Return string format yyyymmdd
+        }
+    }
+
+
     /**
      * @param contactList
      * @throws CommandException
      */
     public void sortListByBirthday(ArrayList<ReadOnlyPerson> contactList) throws CommandException {
         contactList.addAll(filteredPersons);
-        Collections.sort(contactList, ReadOnlyPerson.COMPARE_BY_BIRTHDAY);
+        Collections.sort(contactList, COMPARE_BY_BIRTHDAY);
 
         try {
             addressBook.setPersons(contactList);
             indicateAddressBookChanged();
         } catch (DuplicatePersonException e) {
             throw new CommandException(MESSAGE_DUPLICATE_PERSON);
+        }
+    }
+
+    Comparator<ReadOnlyPerson> COMPARE_BY_BIRTHDAY = new Comparator<ReadOnlyPerson>() {
+        public int compare(ReadOnlyPerson firstPerson, ReadOnlyPerson secondPerson) {
+            String newFirstNum = getNewStringBirthdayFormat(firstPerson);
+            String newSecondNum = getNewStringBirthdayFormat(secondPerson);
+            if (newFirstNum.equals("") || newSecondNum.equals("")) {
+                return newSecondNum.compareTo(newFirstNum);
+            } else {
+                return newFirstNum.compareTo(newSecondNum);
+            }
+        }
+    };
+
+    static String getNewStringBirthdayFormat(ReadOnlyPerson person) {
+        if (person.getBirthday().toString().equals("")) {
+            return "";
+        } else {
+            String numInString = person.getBirthday().toString();  // Converts birthday to String type
+            String dayForNum = numInString.substring(0, 2);        // Index of day in dd/mm/yyyy
+            String monthForNum = numInString.substring(3, 5);      // Index of month in dd/mm/yyyy
+            String yearForNum = numInString.substring(6, 10);      // Index of year in dd/mm/yyyy
+            return monthForNum + dayForNum + yearForNum;           // Return String format mmddyyy
         }
     }
 }
