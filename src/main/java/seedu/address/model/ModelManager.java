@@ -19,6 +19,8 @@ import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.events.model.AddressBookChangedEvent;
 
 import seedu.address.logic.commands.exceptions.CommandException;
+import seedu.address.model.person.AgeComparator;
+import seedu.address.model.person.BirthdayComparator;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.ReadOnlyPerson;
 import seedu.address.model.person.exceptions.DuplicatePersonException;
@@ -31,7 +33,7 @@ import seedu.address.model.tag.Tag;
  */
 public class ModelManager extends ComponentManager implements Model {
 
-    public static final String MESSAGE_DUPLICATE_PERSON =  "Duplicate persons in AddressBook.";
+    public static final String MESSAGE_DUPLICATE_PERSON = "Duplicate persons in AddressBook.";
     private static final Logger logger = LogsCenter.getLogger(ModelManager.class);
 
     private final AddressBook addressBook;
@@ -65,7 +67,9 @@ public class ModelManager extends ComponentManager implements Model {
         return addressBook;
     }
 
-    /** Raises an event to indicate the model has changed */
+    /**
+     * Raises an event to indicate the model has changed
+     */
     private void indicateAddressBookChanged() {
         raise(new AddressBookChangedEvent(addressBook));
     }
@@ -92,7 +96,7 @@ public class ModelManager extends ComponentManager implements Model {
     }
 
     @Override
-    public void deleteTag(Tag tag) throws PersonNotFoundException, DuplicatePersonException  {
+    public void deleteTag(Tag tag) throws PersonNotFoundException, DuplicatePersonException {
         for (int i = 0; i < addressBook.getPersonList().size(); i++) {
             ReadOnlyPerson oldPerson = addressBook.getPersonList().get(i);
 
@@ -170,7 +174,7 @@ public class ModelManager extends ComponentManager implements Model {
      */
     public void sortListByAge(ArrayList<ReadOnlyPerson> contactList) throws CommandException {
         contactList.addAll(filteredPersons);
-        Collections.sort(contactList, COMPARE_AGE);
+        Collections.sort(contactList, new AgeComparator());
 
         try {
             addressBook.setPersons(contactList);
@@ -179,31 +183,6 @@ public class ModelManager extends ComponentManager implements Model {
             throw new CommandException(MESSAGE_DUPLICATE_PERSON);
         }
     }
-
-    public static Comparator<ReadOnlyPerson> COMPARE_AGE = new Comparator<ReadOnlyPerson>() {
-        public int compare(ReadOnlyPerson firstNum, ReadOnlyPerson secondNum) {
-            String newFirstNum = getNewStringAgeFormat(firstNum);
-            String newSecondNum = getNewStringAgeFormat(secondNum);
-            if (newFirstNum.equals("") || newSecondNum.equals("")) {
-                return newSecondNum.compareTo(newFirstNum);
-            } else {
-                return newFirstNum.compareTo(newSecondNum);
-            }
-        }
-    };
-
-    public static String getNewStringAgeFormat(ReadOnlyPerson person) {
-        if (person.getBirthday().toString().equals("")) {
-            return "";
-        } else {
-            String numInString = person.getBirthday().toString();    // Converts birthday to String type
-            String dayForNum = numInString.substring(0, 2);        // Index of day in dd/mm/yyyy
-            String monthForNum = numInString.substring(3, 5);      // Index of month in dd/mm/yyyy
-            String yearForNum = numInString.substring(6, 10);      // Index of year in dd/mm/yyyy
-            return yearForNum + monthForNum + dayForNum;           // Return string format yyyymmdd
-        }
-    }
-
 
     /**
      * @param contactList
@@ -211,7 +190,7 @@ public class ModelManager extends ComponentManager implements Model {
      */
     public void sortListByBirthday(ArrayList<ReadOnlyPerson> contactList) throws CommandException {
         contactList.addAll(filteredPersons);
-        Collections.sort(contactList, COMPARE_BIRTHDAY);
+        Collections.sort(contactList, new BirthdayComparator());
 
         try {
             addressBook.setPersons(contactList);
@@ -221,27 +200,7 @@ public class ModelManager extends ComponentManager implements Model {
         }
     }
 
-    public static Comparator<ReadOnlyPerson> COMPARE_BIRTHDAY = new Comparator<ReadOnlyPerson>() {
-        public int compare(ReadOnlyPerson firstPerson, ReadOnlyPerson secondPerson) {
-            String newFirstNum = getNewStringBirthdayFormat(firstPerson);
-            String newSecondNum = getNewStringBirthdayFormat(secondPerson);
-            if (newFirstNum.equals("") || newSecondNum.equals("")) {
-                return newSecondNum.compareTo(newFirstNum);
-            } else {
-                return newFirstNum.compareTo(newSecondNum);
-            }
-        }
-    };
-
-    public static String getNewStringBirthdayFormat(ReadOnlyPerson person) {
-        if (person.getBirthday().toString().equals("")) {
-            return "";
-        } else {
-            String numInString = person.getBirthday().toString();  // Converts birthday to String type
-            String dayForNum = numInString.substring(0, 2);        // Index of day in dd/mm/yyyy
-            String monthForNum = numInString.substring(3, 5);      // Index of month in dd/mm/yyyy
-            String yearForNum = numInString.substring(6, 10);      // Index of year in dd/mm/yyyy
-            return monthForNum + dayForNum + yearForNum;           // Return String format mmddyyy
-        }
-    }
 }
+
+
+
