@@ -19,6 +19,8 @@ import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.events.model.AddressBookChangedEvent;
 
 import seedu.address.logic.commands.exceptions.CommandException;
+import seedu.address.model.person.AgeComparator;
+import seedu.address.model.person.BirthdayComparator;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.ReadOnlyPerson;
 import seedu.address.model.person.exceptions.DuplicatePersonException;
@@ -31,7 +33,7 @@ import seedu.address.model.tag.Tag;
  */
 public class ModelManager extends ComponentManager implements Model {
 
-    public static final String MESSAGE_DUPLICATE_PERSON =  "Duplicate persons in AddressBook.";
+    public static final String MESSAGE_DUPLICATE_PERSON = "Duplicate persons in AddressBook.";
     private static final Logger logger = LogsCenter.getLogger(ModelManager.class);
 
     private final AddressBook addressBook;
@@ -65,7 +67,9 @@ public class ModelManager extends ComponentManager implements Model {
         return addressBook;
     }
 
-    /** Raises an event to indicate the model has changed */
+    /**
+     * Raises an event to indicate the model has changed
+     */
     private void indicateAddressBookChanged() {
         raise(new AddressBookChangedEvent(addressBook));
     }
@@ -92,7 +96,7 @@ public class ModelManager extends ComponentManager implements Model {
     }
 
     @Override
-    public void deleteTag(Tag tag) throws PersonNotFoundException, DuplicatePersonException  {
+    public void deleteTag(Tag tag) throws PersonNotFoundException, DuplicatePersonException {
         for (int i = 0; i < addressBook.getPersonList().size(); i++) {
             ReadOnlyPerson oldPerson = addressBook.getPersonList().get(i);
 
@@ -163,4 +167,40 @@ public class ModelManager extends ComponentManager implements Model {
             throw new CommandException(MESSAGE_DUPLICATE_PERSON);
         }
     }
+
+    /**
+     * @param contactList
+     * @throws CommandException
+     */
+    public void sortListByAge(ArrayList<ReadOnlyPerson> contactList) throws CommandException {
+        contactList.addAll(filteredPersons);
+        Collections.sort(contactList, new AgeComparator());
+
+        try {
+            addressBook.setPersons(contactList);
+            indicateAddressBookChanged();
+        } catch (DuplicatePersonException e) {
+            throw new CommandException(MESSAGE_DUPLICATE_PERSON);
+        }
+    }
+
+    /**
+     * @param contactList
+     * @throws CommandException
+     */
+    public void sortListByBirthday(ArrayList<ReadOnlyPerson> contactList) throws CommandException {
+        contactList.addAll(filteredPersons);
+        Collections.sort(contactList, new BirthdayComparator());
+
+        try {
+            addressBook.setPersons(contactList);
+            indicateAddressBookChanged();
+        } catch (DuplicatePersonException e) {
+            throw new CommandException(MESSAGE_DUPLICATE_PERSON);
+        }
+    }
+
 }
+
+
+
