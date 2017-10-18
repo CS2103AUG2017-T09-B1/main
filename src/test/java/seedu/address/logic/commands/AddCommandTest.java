@@ -151,12 +151,12 @@ public class AddCommandTest {
         }
 
         @Override
-        public void sortListByBirthday(ArrayList<ReadOnlyPerson> contactList)  throws CommandException {
+        public void sortListByBirthday(ArrayList<ReadOnlyPerson> contactList) throws CommandException {
             fail("This method should not be called.");
         }
-        
+
         @Override
-        public void sortListByAge(ArrayList<ReadOnlyPerson> contactList)  throws CommandException {
+        public void sortListByAge(ArrayList<ReadOnlyPerson> contactList) throws CommandException {
             fail("This method should not be called.");
         }
 
