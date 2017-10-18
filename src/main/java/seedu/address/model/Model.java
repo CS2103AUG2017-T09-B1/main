@@ -7,7 +7,6 @@ import javafx.collections.ObservableList;
 
 import seedu.address.logic.commands.exceptions.CommandException;
 
-import seedu.address.model.person.Birthday;
 import seedu.address.model.person.ReadOnlyPerson;
 import seedu.address.model.person.exceptions.DuplicatePersonException;
 import seedu.address.model.person.exceptions.PersonNotFoundException;

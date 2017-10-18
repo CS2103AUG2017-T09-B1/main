@@ -20,9 +20,9 @@ public class Birthday {
     @Override
     public boolean equals(Object other) {
         return other == this // short circuit if same object
-                || (other instanceof Birthday // instanceof handles nulls
-                && this.value.equals(((Birthday) other).value)); // state check
-           }
+                // || (other instanceof Birthday // instanceof handles nulls
+                && this.value.equals(((Birthday) other).value);    // state check
+    }
 
     @Override
     public int hashCode() {

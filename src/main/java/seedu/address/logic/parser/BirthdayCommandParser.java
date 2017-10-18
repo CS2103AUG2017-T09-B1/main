@@ -10,6 +10,9 @@ import seedu.address.logic.commands.BirthdayCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Birthday;
 
+/**
+ * Parses input arguments and creates a new BirthdayCommand object
+ */
 public class BirthdayCommandParser implements Parser<BirthdayCommand> {
     /**
      * Parses the given {@code String} of arguments in the context of the BirthdayCommand
@@ -18,8 +21,8 @@ public class BirthdayCommandParser implements Parser<BirthdayCommand> {
      */
     public BirthdayCommand parse(String args) throws ParseException {
         requireNonNull(args);
-               ArgumentMultimap argMultimap =
-                       ArgumentTokenizer.tokenize(args, PREFIX_BIRTHDAY);
+        ArgumentMultimap argMultimap =
+                ArgumentTokenizer.tokenize(args, PREFIX_BIRTHDAY);
 
         Index index;
         try {

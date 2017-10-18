@@ -27,32 +27,8 @@ public interface ReadOnlyPerson {
     ObjectProperty<UniqueTagList> tagProperty();
     Set<Tag> getTags();
 
-    Comparator<ReadOnlyPerson> COMPARE_BY_AGE = new Comparator<ReadOnlyPerson>() {
-        public int compare(ReadOnlyPerson firstNum, ReadOnlyPerson secondNum) {
-            String newFirstNum = getNewStringAgeFormat(firstNum);
-            String newSecondNum = getNewStringAgeFormat(secondNum);
-            if(newFirstNum.equals("") || newSecondNum.equals("")) {
-                return newSecondNum.compareTo(newFirstNum);
-            } else {
-                return newFirstNum.compareTo(newSecondNum);
-            }
-        }
-    };
-
-    Comparator<ReadOnlyPerson> COMPARE_BY_BIRTHDAY = new Comparator<ReadOnlyPerson>() {
-        public int compare(ReadOnlyPerson firstPerson, ReadOnlyPerson secondPerson) {
-            String newFirstNum = getNewStringBirthdayFormat(firstPerson);
-            String newSecondNum = getNewStringBirthdayFormat(secondPerson);
-            if(newFirstNum.equals("") || newSecondNum.equals("")) {
-                return newSecondNum.compareTo(newFirstNum);
-            } else {
-                return newFirstNum.compareTo(newSecondNum);
-            }
-        }
-    };
-
     static String getNewStringAgeFormat(ReadOnlyPerson person) {
-        if(person.getBirthday().toString().equals("")) {
+        if (person.getBirthday().toString().equals("")) {
             return "";
         } else {
             String numInString = person.getBirthday().toString();    // Converts birthday to String type
@@ -64,7 +40,7 @@ public interface ReadOnlyPerson {
     }
 
     static String getNewStringBirthdayFormat(ReadOnlyPerson person) {
-        if(person.getBirthday().toString().equals("")) {
+        if (person.getBirthday().toString().equals("")) {
             return "";
         } else {
             String numInString = person.getBirthday().toString();  // Converts birthday to String type
@@ -106,5 +82,29 @@ public interface ReadOnlyPerson {
         getTags().forEach(builder::append);
         return builder.toString();
     }
+
+    Comparator<ReadOnlyPerson> COMPARE_BY_AGE = new Comparator<ReadOnlyPerson>() {
+        public int compare(ReadOnlyPerson firstNum, ReadOnlyPerson secondNum) {
+            String newFirstNum = getNewStringAgeFormat(firstNum);
+            String newSecondNum = getNewStringAgeFormat(secondNum);
+            if (newFirstNum.equals("") || newSecondNum.equals("")) {
+                return newSecondNum.compareTo(newFirstNum);
+            } else {
+                return newFirstNum.compareTo(newSecondNum);
+            }
+        }
+    };
+
+    Comparator<ReadOnlyPerson> COMPARE_BY_BIRTHDAY = new Comparator<ReadOnlyPerson>() {
+        public int compare(ReadOnlyPerson firstPerson, ReadOnlyPerson secondPerson) {
+            String newFirstNum = getNewStringBirthdayFormat(firstPerson);
+            String newSecondNum = getNewStringBirthdayFormat(secondPerson);
+            if (newFirstNum.equals("") || newSecondNum.equals("")) {
+                return newSecondNum.compareTo(newFirstNum);
+            } else {
+                return newFirstNum.compareTo(newSecondNum);
+            }
+        }
+    };
 
 }
