@@ -7,6 +7,7 @@ import javafx.collections.ObservableList;
 
 import seedu.address.logic.commands.exceptions.CommandException;
 
+import seedu.address.model.person.Birthday;
 import seedu.address.model.person.ReadOnlyPerson;
 import seedu.address.model.person.exceptions.DuplicatePersonException;
 import seedu.address.model.person.exceptions.PersonNotFoundException;
@@ -63,5 +64,18 @@ public interface Model {
      * @throws NullPointerException if {@code contactList} is null.
      */
     void sortListByName(ArrayList<ReadOnlyPerson> contactList)  throws CommandException;
+
+    /**
+     * @param contactList
+     * @throws CommandException
+     */
+    void sortListByBirthday(ArrayList<ReadOnlyPerson> contactList)  throws CommandException;
+
+    /**
+     * @param contactList
+     * @throws CommandException
+     */
+    void sortListByAge(ArrayList<ReadOnlyPerson> contactList)  throws CommandException;
+
 
 }

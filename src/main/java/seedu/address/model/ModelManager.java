@@ -163,4 +163,36 @@ public class ModelManager extends ComponentManager implements Model {
             throw new CommandException(MESSAGE_DUPLICATE_PERSON);
         }
     }
+
+    /**
+     * @param contactList
+     * @throws CommandException
+     */
+    public void sortListByAge(ArrayList<ReadOnlyPerson> contactList) throws CommandException {
+        contactList.addAll(filteredPersons);
+        Collections.sort(contactList, ReadOnlyPerson.COMPARE_BY_AGE);
+
+        try {
+            addressBook.setPersons(contactList);
+            indicateAddressBookChanged();
+        } catch (DuplicatePersonException e) {
+            throw new CommandException(MESSAGE_DUPLICATE_PERSON);
+        }
+    }
+
+    /**
+     * @param contactList
+     * @throws CommandException
+     */
+    public void sortListByBirthday(ArrayList<ReadOnlyPerson> contactList) throws CommandException {
+        contactList.addAll(filteredPersons);
+        Collections.sort(contactList, ReadOnlyPerson.COMPARE_BY_BIRTHDAY);
+
+        try {
+            addressBook.setPersons(contactList);
+            indicateAddressBookChanged();
+        } catch (DuplicatePersonException e) {
+            throw new CommandException(MESSAGE_DUPLICATE_PERSON);
+        }
+    }
 }
