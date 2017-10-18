@@ -170,7 +170,7 @@ public class ModelManager extends ComponentManager implements Model {
      */
     public void sortListByAge(ArrayList<ReadOnlyPerson> contactList) throws CommandException {
         contactList.addAll(filteredPersons);
-        Collections.sort(contactList, COMPARE_BY_AGE);
+        Collections.sort(contactList, COMPARE_AGE);
 
         try {
             addressBook.setPersons(contactList);
@@ -180,7 +180,7 @@ public class ModelManager extends ComponentManager implements Model {
         }
     }
 
-    Comparator<ReadOnlyPerson> COMPARE_BY_AGE = new Comparator<ReadOnlyPerson>() {
+    public static Comparator<ReadOnlyPerson> COMPARE_AGE = new Comparator<ReadOnlyPerson>() {
         public int compare(ReadOnlyPerson firstNum, ReadOnlyPerson secondNum) {
             String newFirstNum = getNewStringAgeFormat(firstNum);
             String newSecondNum = getNewStringAgeFormat(secondNum);
@@ -192,7 +192,7 @@ public class ModelManager extends ComponentManager implements Model {
         }
     };
 
-    static String getNewStringAgeFormat(ReadOnlyPerson person) {
+    public static String getNewStringAgeFormat(ReadOnlyPerson person) {
         if (person.getBirthday().toString().equals("")) {
             return "";
         } else {
@@ -211,7 +211,7 @@ public class ModelManager extends ComponentManager implements Model {
      */
     public void sortListByBirthday(ArrayList<ReadOnlyPerson> contactList) throws CommandException {
         contactList.addAll(filteredPersons);
-        Collections.sort(contactList, COMPARE_BY_BIRTHDAY);
+        Collections.sort(contactList, COMPARE_BIRTHDAY);
 
         try {
             addressBook.setPersons(contactList);
@@ -221,7 +221,7 @@ public class ModelManager extends ComponentManager implements Model {
         }
     }
 
-    Comparator<ReadOnlyPerson> COMPARE_BY_BIRTHDAY = new Comparator<ReadOnlyPerson>() {
+    public static Comparator<ReadOnlyPerson> COMPARE_BIRTHDAY = new Comparator<ReadOnlyPerson>() {
         public int compare(ReadOnlyPerson firstPerson, ReadOnlyPerson secondPerson) {
             String newFirstNum = getNewStringBirthdayFormat(firstPerson);
             String newSecondNum = getNewStringBirthdayFormat(secondPerson);
@@ -233,7 +233,7 @@ public class ModelManager extends ComponentManager implements Model {
         }
     };
 
-    static String getNewStringBirthdayFormat(ReadOnlyPerson person) {
+    public static String getNewStringBirthdayFormat(ReadOnlyPerson person) {
         if (person.getBirthday().toString().equals("")) {
             return "";
         } else {

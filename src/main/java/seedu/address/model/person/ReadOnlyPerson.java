@@ -1,7 +1,5 @@
 package seedu.address.model.person;
 
-import java.util.Comparator;
-
 import java.util.Set;
 
 import javafx.beans.property.ObjectProperty;
