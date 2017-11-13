@@ -784,8 +784,8 @@ public class SortPriorityCommand extends UndoableCommand {
     public static final String COMMAND_WORD = "sortPriority";
     public static final String COMMAND_ALIAS = "sp";
 
-    public static final String MESSAGE_SUCCESS = "All contacts are sorted by priority. (High -> Medium -> Low)";
-    public static final String MESSAGE_EMPTY_LIST = "Contact list is empty.";
+    public static final String MESSAGE_SUCCESS = "All reminders are sorted by priority. (High -> Medium -> Low)";
+    public static final String MESSAGE_EMPTY_LIST = "Reminder list is empty.";
 
     private ArrayList<ReadOnlyReminder> contactList;
 
@@ -1332,7 +1332,7 @@ public class Birthday {
 
         String trimmedBirthday = birthday.trim();
 
-        if(trimmedBirthday.equals("")) {
+        if (trimmedBirthday.equals("")) {
             return true;
         }
 
