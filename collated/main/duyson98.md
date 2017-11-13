@@ -1,11 +1,159 @@
 # duyson98
+###### \java\seedu\address\commons\events\ui\ShowProfileRequestEvent.java
+``` java
+
+package seedu.address.commons.events.ui;
+
+import seedu.address.commons.events.BaseEvent;
+import seedu.address.model.person.ReadOnlyPerson;
+
+/**
+ * Indicates a request to view the profile of a person in filtered list.
+ */
+public class ShowProfileRequestEvent extends BaseEvent {
+
+    public final ReadOnlyPerson person;
+
+    public ShowProfileRequestEvent(ReadOnlyPerson person) {
+        this.person = person;
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName();
+    }
+
+}
+```
+###### \java\seedu\address\logic\commands\RetagCommand.java
+``` java
+
+package seedu.address.logic.commands;
+
+import static java.util.Objects.requireNonNull;
+import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import seedu.address.logic.commands.exceptions.CommandException;
+import seedu.address.model.person.Person;
+import seedu.address.model.person.ReadOnlyPerson;
+import seedu.address.model.person.exceptions.DuplicatePersonException;
+import seedu.address.model.person.exceptions.PersonNotFoundException;
+import seedu.address.model.tag.Tag;
+import seedu.address.model.tag.UniqueTagList;
+
+/**
+ * Replaces a tag name in person list by a new tag name from the address book.
+ */
+public class RetagCommand extends UndoableCommand {
+
+    public static final String COMMAND_WORD = "retag";
+    public static final String COMMAND_ALIAS = "rt";
+
+    public static final String MESSAGE_USAGE = COMMAND_WORD
+        + ": Retags all person having the old tag name to the new tag name.\n"
+        + "Parameters: OLDTAGNAME + NEWTAGNAME\n"
+        + "Example: " + COMMAND_WORD + " friends enemies";
+
+    public static final String MESSAGE_SUCCESS = "%s tag in person list successfully replaced by %s.";
+
+    public static final String MESSAGE_TAG_NOT_FOUND = "%s tag not found in person list.";
+    public static final String MESSAGE_INVALID_ARGS = "Target tag name is the same as new tag name. \n%1$s";
+    public static final String MESSAGE_DUPLICATE_TAG = "One or more persons already have this tag.";
+    public static final String MESSAGE_DUPLICATE_PERSON = "This person already exists in the address book.";
+
+    private Tag targetTag;
+    private Tag newTag;
+
+    /**
+    * @param targetTag of persons in the filtered person list to retag
+    * @param newTag of persons
+    */
+    public RetagCommand(Tag targetTag, Tag newTag) {
+        requireNonNull(targetTag);
+        requireNonNull(newTag);
+
+        this.targetTag = targetTag;
+        this.newTag = newTag;
+    }
+
+    @Override
+    protected CommandResult executeUndoableCommand() throws CommandException {
+        model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
+
+        List<ReadOnlyPerson> lastShownListCopy = new ArrayList<>(model.getFilteredPersonList());
+
+        if (!tagUsedInPersonList(lastShownListCopy, targetTag)) {
+            throw new CommandException(String.format(MESSAGE_TAG_NOT_FOUND, targetTag.toString()));
+        }
+
+        for (ReadOnlyPerson person : lastShownListCopy) {
+            Person retaggedPerson = new Person(person);
+            UniqueTagList updatedTags = new UniqueTagList(retaggedPerson.getTags());
+            if (updatedTags.contains(targetTag)) {
+                updatedTags.remove(targetTag);
+            } else {
+                continue;
+            }
+
+            if (!updatedTags.contains(newTag)) {
+                try {
+                    updatedTags.add(newTag);
+                } catch (UniqueTagList.DuplicateTagException e) {
+                    throw new CommandException(MESSAGE_DUPLICATE_TAG);
+                }
+            }
+
+            retaggedPerson.setTags(updatedTags.toSet());
+            try {
+                model.updatePerson(person, retaggedPerson);
+            } catch (DuplicatePersonException dpe) {
+                throw new CommandException(MESSAGE_DUPLICATE_PERSON);
+            } catch (PersonNotFoundException pnfe) {
+                throw new AssertionError("The target person cannot be missing");
+            }
+        }
+
+        model.deleteUnusedTag(targetTag);
+        return new CommandResult(String.format(MESSAGE_SUCCESS, targetTag.toString(), newTag.toString()));
+    }
+
+    /**
+     * Checks whether a tag is used inside person list
+     */
+    private boolean tagUsedInPersonList(List<ReadOnlyPerson> personList, Tag tag) {
+        assert personList != null && tag != null;
+
+        for (ReadOnlyPerson person : personList) {
+            if (person.getTags().contains(tag)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return other == this // short circuit if same object
+            || (other instanceof RetagCommand // instanceof handles nulls
+            && this.targetTag.equals(((RetagCommand) other).targetTag)) // state check
+            && this.newTag.equals(((RetagCommand) other).newTag); // state check
+    }
+
+}
+```
 ###### \java\seedu\address\logic\commands\RetrieveCommand.java
 ``` java
 
 package seedu.address.logic.commands;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.StringJoiner;
 
+import seedu.address.model.person.ReadOnlyPerson;
 import seedu.address.model.tag.Tag;
 import seedu.address.model.tag.TagContainsKeywordPredicate;
 
@@ -24,7 +172,8 @@ public class RetrieveCommand extends Command {
 
     public static final String MESSAGE_EMPTY_ARGS = "Please provide a tag name! \n%1$s";
 
-    public static final String MESSAGE_NOT_FOUND = "Tag not found in person list.";
+    public static final String MESSAGE_NOT_FOUND = "Tag not found in person list." + "\n"
+            + "You may want to refer to the following existing tags inside the unfiltered person list: %s";
 
     private final TagContainsKeywordPredicate predicate;
 
@@ -37,13 +186,15 @@ public class RetrieveCommand extends Command {
         model.updateFilteredPersonList(predicate);
         final int personListSize = model.getFilteredPersonList().size();
         if (personListSize == 0) {
+            Set<Tag> uniqueTags = new HashSet<>();
+            for (ReadOnlyPerson person : model.getAddressBook().getPersonList()) {
+                uniqueTags.addAll(person.getTags());
+            }
             StringJoiner joiner = new StringJoiner(", ");
-            for (Tag tag: model.getAddressBook().getTagList()) {
+            for (Tag tag: uniqueTags) {
                 joiner.add(tag.toString());
             }
-            return new CommandResult(MESSAGE_NOT_FOUND + "\n"
-                    + "You may want to refer to the following existing tags: "
-                    + joiner.toString());
+            return new CommandResult(String.format(MESSAGE_NOT_FOUND, joiner.toString()));
         }
         return new CommandResult(getMessageForPersonListShownSummary(personListSize));
     }
@@ -192,12 +343,13 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.StringJoiner;
 
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.commands.exceptions.CommandException;
-import seedu.address.model.person.Name;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.ReadOnlyPerson;
 import seedu.address.model.person.exceptions.DuplicatePersonException;
@@ -222,24 +374,26 @@ public class UntagCommand extends UndoableCommand {
             + "Parameters: INDEX,[MORE_INDEXES]... (must be positive integers) + TAGNAME\n"
             + "Example: " + COMMAND_WORD + " 1,2,3 friends/colleagues\n"
             + "- Untag all tags of all persons in the last person listing\n"
-            + "Parameters: -a\n"
-            + "Example: " + COMMAND_WORD + " -a\n"
+            + "Parameters: -all\n"
+            + "Example: " + COMMAND_WORD + " -all\n"
             + "- Untag one or more tags of all persons in the last person listing\n"
-            + "Parameters: -a + TAGNAME\n"
-            + "Example: " + COMMAND_WORD + " -a friends/colleagues";
+            + "Parameters: -all + TAGNAME\n"
+            + "Example: " + COMMAND_WORD + " -all friends/colleagues";
 
     public static final String MESSAGE_SUCCESS = "%d person(s) successfully untagged from %s:";
     public static final String MESSAGE_SUCCESS_ALL_TAGS = "%d person(s) sucessfully untagged:";
-    public static final String MESSAGE_SUCCESS_MULTIPLE_TAGS_IN_LIST = "%s tag(s) successfully removed.";
-    public static final String MESSAGE_SUCCESS_ALL_TAGS_IN_LIST = "All tags in the list successfully removed.";
+    public static final String MESSAGE_SUCCESS_MULTIPLE_TAGS_IN_LIST = "%s tag(s) successfully" + " "
+            + "removed from person list.";
+    public static final String MESSAGE_SUCCESS_ALL_TAGS_IN_LIST = "All tags in person list successfully removed.";
 
-    public static final String MESSAGE_TAG_NOT_FOUND = "Tag not found.";
+    public static final String MESSAGE_TAG_NOT_FOUND = "%s tag(s) not found in person list." + "\n"
+            + "You may want to refer to the following existing tags inside the unfiltered person list: %s";
     public static final String MESSAGE_PERSONS_DO_NOT_HAVE_TAGS = "%d person(s) do not have any of the specified tags:";
     public static final String MESSAGE_EMPTY_INDEX_LIST = "Please provide one or more indexes! \n%1$s";
     public static final String MESSAGE_INVALID_INDEXES = "One or more person indexes provided are invalid.";
     public static final String MESSAGE_DUPLICATE_PERSON = "This person already exists in the address book.";
 
-    private boolean toAllInFilteredList;
+    private boolean toAllPersonsInFilteredList;
     private List<Index> targetIndexes;
     private List<Tag> tags;
 
@@ -247,11 +401,11 @@ public class UntagCommand extends UndoableCommand {
      * @param targetIndexes of the persons in the filtered person list to untag
      * @param tags of the persons
      */
-    public UntagCommand(boolean toAllInFilteredList, List<Index> targetIndexes, List<Tag> tags) {
+    public UntagCommand(boolean toAllPersonsInFilteredList, List<Index> targetIndexes, List<Tag> tags) {
         requireNonNull(targetIndexes);
         requireNonNull(tags);
 
-        this.toAllInFilteredList = toAllInFilteredList;
+        this.toAllPersonsInFilteredList = toAllPersonsInFilteredList;
         this.targetIndexes = targetIndexes;
         this.tags = tags;
     }
@@ -260,57 +414,26 @@ public class UntagCommand extends UndoableCommand {
     protected CommandResult executeUndoableCommand() throws CommandException {
         List<ReadOnlyPerson> lastShownList = model.getFilteredPersonList();
 
-        if (toAllInFilteredList) {
-            removeTagsFromPersons(lastShownList, tags);
-            deleteUnusedTagsInTagList(new ArrayList<>(tags.isEmpty()
-                    ? new ArrayList<>(model.getAddressBook().getTagList()) : tags));
-            return (tags.isEmpty()) ? new CommandResult(MESSAGE_SUCCESS_ALL_TAGS_IN_LIST)
-                    : new CommandResult(String.format(MESSAGE_SUCCESS_MULTIPLE_TAGS_IN_LIST, joinList(tags)));
-        }
-
         for (Index targetIndex : targetIndexes) {
             if (targetIndex.getZeroBased() >= lastShownList.size()) {
                 throw new CommandException(MESSAGE_INVALID_INDEXES);
             }
         }
 
-        List<ReadOnlyPerson> personsToUpdate = new ArrayList<>();
-        List<Name> toBeUntaggedPersonNames = new ArrayList<>();
-        if (tags.isEmpty()) {
-            for (Index targetIndex : targetIndexes) {
-                ReadOnlyPerson person = lastShownList.get(targetIndex.getZeroBased());
-                personsToUpdate.add(person);
-                toBeUntaggedPersonNames.add(person.getName());
-            }
-            removeTagsFromPersons(personsToUpdate, tags);
-            deleteUnusedTagsInTagList(new ArrayList<>(model.getAddressBook().getTagList()));
-            return new CommandResult(String.format(MESSAGE_SUCCESS_ALL_TAGS, targetIndexes.size()) + " "
-                    + joinList(toBeUntaggedPersonNames));
+        Set<Tag> uniqueTags = new HashSet<>();
+        for (ReadOnlyPerson person : model.getAddressBook().getPersonList()) {
+            uniqueTags.addAll(person.getTags());
+        }
+        if (!tags.isEmpty() && Collections.disjoint(uniqueTags, tags)) {
+            throw new CommandException(String.format(MESSAGE_TAG_NOT_FOUND,
+                    joinTagList(tags), joinTagList(new ArrayList<>(uniqueTags))));
         }
 
-        List<Name> alreadyUntaggedPersonNames = new ArrayList<>();
-        for (Index targetIndex : targetIndexes) {
-            ReadOnlyPerson person = lastShownList.get(targetIndex.getZeroBased());
-            if (Collections.disjoint(person.getTags(), tags)) {
-                alreadyUntaggedPersonNames.add(person.getName());
-                continue;
-            }
-            personsToUpdate.add(person);
-            toBeUntaggedPersonNames.add(person.getName());
+        if (toAllPersonsInFilteredList) {
+            return new CommandResult(untagAllPersonsInFilteredList(lastShownList));
         }
 
-        removeTagsFromPersons(personsToUpdate, tags);
-        deleteUnusedTagsInTagList(tags);
-
-        if (alreadyUntaggedPersonNames.size() > 0) {
-            return new CommandResult(String.format(MESSAGE_SUCCESS,
-                    targetIndexes.size() - alreadyUntaggedPersonNames.size(), joinList(tags)) + " "
-                    + joinList(toBeUntaggedPersonNames) + "\n"
-                    + String.format(MESSAGE_PERSONS_DO_NOT_HAVE_TAGS, alreadyUntaggedPersonNames.size()) + " "
-                    + joinList(alreadyUntaggedPersonNames));
-        }
-        return new CommandResult(String.format(MESSAGE_SUCCESS,
-                targetIndexes.size(), joinList(tags)) + " " + joinList(toBeUntaggedPersonNames));
+        return new CommandResult(untagSpecifiedPersonsInFilteredList(lastShownList));
     }
 
     @Override
@@ -322,12 +445,62 @@ public class UntagCommand extends UndoableCommand {
     }
 
     /**
-     * Removes a tag from the person
+     * @param lastShownList of person filtered list
+     */
+    private String untagSpecifiedPersonsInFilteredList(List<ReadOnlyPerson> lastShownList) throws CommandException {
+        List<ReadOnlyPerson> toBeUntaggedPerson = new ArrayList<>();
+        List<ReadOnlyPerson> alreadyUntaggedPerson = new ArrayList<>();
+        Set<Tag> uniqueTags = new HashSet<>();
+
+        for (Index targetIndex : targetIndexes) {
+            ReadOnlyPerson person = lastShownList.get(targetIndex.getZeroBased());
+            if (!tags.isEmpty() && Collections.disjoint(person.getTags(), tags)) {
+                alreadyUntaggedPerson.add(person);
+            } else {
+                toBeUntaggedPerson.add(person);
+            }
+            uniqueTags.addAll(person.getTags());
+        }
+
+        List<Tag> tagsToRemove = new ArrayList<>(uniqueTags);
+        removeTagsFromPersons(toBeUntaggedPerson, (tags.isEmpty()) ? tagsToRemove : tags);
+        deleteUnusedTagsInTagList(tagsToRemove);
+
+        if (tags.isEmpty()) {
+            return String.format(MESSAGE_SUCCESS_ALL_TAGS, targetIndexes.size()) + " "
+                    + joinPersonList(toBeUntaggedPerson);
+        }
+        return (alreadyUntaggedPerson.size() > 0)
+                ? String.format(MESSAGE_SUCCESS, targetIndexes.size() - alreadyUntaggedPerson.size(), joinTagList(tags))
+                + " " + joinPersonList(toBeUntaggedPerson) + "\n"
+                + String.format(MESSAGE_PERSONS_DO_NOT_HAVE_TAGS, alreadyUntaggedPerson.size()) + " "
+                + joinPersonList(alreadyUntaggedPerson)
+                : String.format(MESSAGE_SUCCESS, targetIndexes.size(), joinTagList(tags))
+                + " " + joinPersonList(toBeUntaggedPerson);
+    }
+
+    /**
+     * @param lastShownList in filtered list
+     */
+    private String untagAllPersonsInFilteredList(List<ReadOnlyPerson> lastShownList) throws CommandException {
+        List<ReadOnlyPerson> personsToUpdate = new ArrayList<>(lastShownList);
+
+        removeTagsFromPersons(personsToUpdate, tags);
+        deleteUnusedTagsInTagList(new ArrayList<>(tags.isEmpty()
+                ? new ArrayList<>(model.getAddressBook().getTagList()) : tags));
+        return (tags.isEmpty()) ? MESSAGE_SUCCESS_ALL_TAGS_IN_LIST
+                : String.format(MESSAGE_SUCCESS_MULTIPLE_TAGS_IN_LIST, joinTagList(tags));
+    }
+
+    /**
+     * Removes specified tags from the person list
      * Removes all tags if tag is not specified
      * @param persons to be untagged
      * @param tags to be removed
      */
     private void removeTagsFromPersons(List<ReadOnlyPerson> persons, List<Tag> tags) throws CommandException {
+        assert persons != null;
+
         for (ReadOnlyPerson person : persons) {
             Person untaggedPerson = new Person(person);
             UniqueTagList updatedTags = new UniqueTagList();
@@ -356,15 +529,131 @@ public class UntagCommand extends UndoableCommand {
     }
 
     /**
-     * Join all list elements by commas
-     * @param list to be joined
+     * Join person list elements by commas
+     * @param personList to be joined
      */
-    private String joinList(List list) {
+    private String joinPersonList(List<ReadOnlyPerson> personList) {
         StringJoiner joiner = new StringJoiner(", ");
-        for (Object obj : list) {
-            joiner.add(obj.toString());
+        for (ReadOnlyPerson person : personList) {
+            joiner.add(person.getName().toString());
         }
         return joiner.toString();
+    }
+
+    /**
+     * Join tag list elements by commas
+     * @param tagList to be joined
+     */
+    private String joinTagList(List<Tag> tagList) {
+        StringJoiner joiner = new StringJoiner(", ");
+        for (Tag tag : tagList) {
+            joiner.add(tag.toString());
+        }
+        return joiner.toString();
+    }
+}
+```
+###### \java\seedu\address\logic\commands\ViewCommand.java
+``` java
+
+package seedu.address.logic.commands;
+
+import java.util.List;
+
+import seedu.address.commons.core.EventsCenter;
+import seedu.address.commons.core.Messages;
+import seedu.address.commons.core.index.Index;
+import seedu.address.commons.events.ui.ShowProfileRequestEvent;
+import seedu.address.logic.commands.exceptions.CommandException;
+import seedu.address.model.person.ReadOnlyPerson;
+
+/**
+ * Views profile of a person identified using its last displayed index from the address book.
+ */
+public class ViewCommand extends Command {
+
+    public static final String COMMAND_WORD = "view";
+    public static final String COMMAND_ALIAS = "v";
+
+    public static final String MESSAGE_USAGE = COMMAND_WORD
+            + ": View full profile of a person identified by the index number used in the last person listing.\n"
+            + "Parameters: INDEX (must be a positive integer)\n"
+            + "Example: " + COMMAND_WORD + " 1";
+
+    public static final String MESSAGE_VIEW_PROFILE_SUCCESS = "Retrieved Profile of: %s";
+
+    private final Index targetIndex;
+
+    public ViewCommand(Index targetIndex) {
+        this.targetIndex = targetIndex;
+    }
+
+    @Override
+    public CommandResult execute() throws CommandException {
+        List<ReadOnlyPerson> lastShownList = model.getFilteredPersonList();
+
+        if (targetIndex.getZeroBased() >= lastShownList.size()) {
+            throw new CommandException(Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
+        }
+
+        ReadOnlyPerson personToShowProfile = lastShownList.get(targetIndex.getZeroBased());
+
+        EventsCenter.getInstance().post(new ShowProfileRequestEvent(personToShowProfile));
+        return new CommandResult(String.format(MESSAGE_VIEW_PROFILE_SUCCESS, personToShowProfile.getName().toString()));
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return other == this // short circuit if same object
+                || (other instanceof ViewCommand // instanceof handles nulls
+                && this.targetIndex.equals(((ViewCommand) other).targetIndex)); // state check
+    }
+}
+```
+###### \java\seedu\address\logic\parser\RetagCommandParser.java
+``` java
+
+package seedu.address.logic.parser;
+
+import static java.util.Objects.requireNonNull;
+import static seedu.address.commons.core.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
+import static seedu.address.logic.commands.RetagCommand.MESSAGE_INVALID_ARGS;
+
+import seedu.address.commons.exceptions.IllegalValueException;
+import seedu.address.logic.commands.RetagCommand;
+import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.tag.Tag;
+
+/**
+ * Parses input arguments and creates a new RetagCommand object
+ */
+public class RetagCommandParser implements Parser<RetagCommand> {
+
+    /**
+     * Parses the given {@code String} of arguments in the context of the RetagCommand
+     * and returns a RetagCommand object for execution.
+     * @throws ParseException if the user input does not conform the expected format
+     */
+    public RetagCommand parse(String args) throws ParseException {
+        requireNonNull(args);
+        String trimmedArgs = args.trim();
+        String[] splittedArgs = trimmedArgs.split("\\s+");
+        if (trimmedArgs.isEmpty() || splittedArgs.length != 2) {
+            throw new ParseException(
+                    String.format(MESSAGE_INVALID_COMMAND_FORMAT, RetagCommand.MESSAGE_USAGE));
+        }
+
+        if (splittedArgs[0].equals(splittedArgs[1])) {
+            throw new ParseException(String.format(MESSAGE_INVALID_ARGS, RetagCommand.MESSAGE_USAGE));
+        }
+
+        try {
+            Tag targetTag = new Tag(splittedArgs[0]);
+            Tag newTag = new Tag(splittedArgs[1]);
+            return new RetagCommand(targetTag, newTag);
+        } catch (IllegalValueException ive) {
+            throw new ParseException(ive.getMessage(), ive);
+        }
     }
 
 }
@@ -506,7 +795,7 @@ public class UntagCommandParser implements Parser<UntagCommand> {
         requireNonNull(args);
 
         String trimmedArgs = args.trim();
-        if (trimmedArgs.equals("-a")) {
+        if (trimmedArgs.equals("-all")) {
             return new UntagCommand(true, Collections.emptyList(), Collections.emptyList());
         }
         String[] splittedArgs = trimmedArgs.split("\\s+");
@@ -528,7 +817,7 @@ public class UntagCommandParser implements Parser<UntagCommand> {
         }
 
         List<Index> indexList = new ArrayList<>();
-        if (splittedArgs[0].equals("-a")) {
+        if (splittedArgs[0].equals("-all")) {
             return new UntagCommand(true, indexList, tagList);
         }
         Set<String> uniqueIndexes = new HashSet<>(Arrays.asList(splittedArgs[0].split(",")));
@@ -547,6 +836,52 @@ public class UntagCommandParser implements Parser<UntagCommand> {
     }
 
 }
+```
+###### \java\seedu\address\logic\parser\ViewCommandParser.java
+``` java
+
+package seedu.address.logic.parser;
+
+import static seedu.address.commons.core.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
+
+import seedu.address.commons.core.index.Index;
+import seedu.address.commons.exceptions.IllegalValueException;
+import seedu.address.logic.commands.ViewCommand;
+import seedu.address.logic.parser.exceptions.ParseException;
+
+/**
+ * Parses input arguments and creates a new ViewCommand object
+ */
+public class ViewCommandParser implements Parser<ViewCommand> {
+
+    /**
+     * Parses the given {@code String} of arguments in the context of the ViewCommand
+     * and returns an ViewCommand object for execution.
+     * @throws ParseException if the user input does not conform the expected format
+     */
+    public ViewCommand parse(String args) throws ParseException {
+        try {
+            Index index = ParserUtil.parseIndex(args);
+            return new ViewCommand(index);
+        } catch (IllegalValueException ive) {
+            throw new ParseException(
+                    String.format(MESSAGE_INVALID_COMMAND_FORMAT, ViewCommand.MESSAGE_USAGE));
+        }
+    }
+}
+```
+###### \java\seedu\address\MainApp.java
+``` java
+        logger.info("Loading custom fonts.");
+        Font timeFont = Font.loadFont(MainApp.class.getClassLoader().getResourceAsStream(
+                "fonts/NovaSquare.ttf"), 10);
+        Font dateFont = Font.loadFont(MainApp.class.getClassLoader().getResourceAsStream(
+                "fonts/digital-7 (italic).ttf"), 10);
+        Font profileNameFont = Font.loadFont(MainApp.class.getClassLoader().getResourceAsStream(
+                "fonts/HaloHandletter.otf"), 10);
+        if (dateFont == null || timeFont == null || profileNameFont == null) {
+            logger.warning("Failed to load custom fonts.");
+        }
 ```
 ###### \java\seedu\address\model\AddressBook.java
 ``` java
@@ -704,6 +1039,128 @@ public class ClockDisplay {
 
 }
 ```
+###### \java\seedu\address\model\clock\RunningDate.java
+``` java
+
+package seedu.address.model.clock;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * Represents a running date inside the address book application.
+ */
+public class RunningDate {
+
+    private DayOfWeek dayOfWeek;
+    private int dayOfMonth;
+    private MonthOfYear month;
+    private int year;
+
+    public RunningDate() {
+        setCurrentDate();
+    }
+
+    public DayOfWeek getDayOfWeek() {
+        return dayOfWeek;
+    }
+
+    public int getDayOfMonth() {
+        return dayOfMonth;
+    }
+
+    public MonthOfYear getMonth() {
+        return month;
+    }
+
+    public int getYear() {
+        return year;
+    }
+
+    public void setCurrentDate() {
+        this.dayOfWeek = DayOfWeek.valueOf(LocalDateTime.now().getDayOfWeek().getValue());
+        this.dayOfMonth = LocalDateTime.now().getDayOfMonth();
+        this.month = MonthOfYear.valueOf(LocalDateTime.now().getMonth().getValue());
+        this.year = LocalDateTime.now().getYear();
+    }
+
+    @Override
+    public String toString() {
+        return dayOfWeek.toString() + ", " + dayOfMonth + " " + month.toString() + ", " + year;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return other == this // short circuit if same object
+                || (other instanceof RunningDate // instanceof handles nulls
+                && this.dayOfWeek.equals(((RunningDate) other).dayOfWeek) // state checks onwards
+                && this.dayOfMonth == ((RunningDate) other).dayOfMonth
+                && this.month.equals(((RunningDate) other).month)
+                && this.year == ((RunningDate) other).year);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(dayOfWeek, dayOfMonth, month, year);
+    }
+
+}
+
+/**
+ * Represents days of a week.
+ */
+enum DayOfWeek {
+
+    Monday(1), Tuesday(2), Wedsnesday(3), Thurday(4), Friday(5), Saturday(6), Sunday(7);
+
+    private static Map<Integer, DayOfWeek> map = new HashMap<>();
+    private int index;
+
+    DayOfWeek(int index) {
+        this.index = index;
+    }
+
+    static {
+        for (DayOfWeek item : DayOfWeek.values()) {
+            map.put(item.index, item);
+        }
+    }
+
+    public static DayOfWeek valueOf(int index) {
+        return map.get(index);
+    }
+
+}
+
+/**
+ * Represents months of a year.
+ */
+enum MonthOfYear {
+
+    January(1), February(2), March(3), April(4), May(5), June(6), July(7), August(8), September(9),
+    October(10), November(11), December(12);
+
+    private static Map<Integer, MonthOfYear> map = new HashMap<>();
+    private int index;
+
+    MonthOfYear(int index) {
+        this.index = index;
+    }
+
+    static {
+        for (MonthOfYear item : MonthOfYear.values()) {
+            map.put(item.index, item);
+        }
+    }
+
+    public static MonthOfYear valueOf(int index) {
+        return map.get(index);
+    }
+
+}
+```
 ###### \java\seedu\address\model\clock\RunningTime.java
 ``` java
 
@@ -846,20 +1303,6 @@ public class RunningTime {
             addressBook.updateReminder(oldReminder, newReminder);
         }
     }
-
-    @Override
-    public synchronized void deleteAccount(ReadOnlyAccount target) throws PersonNotFoundException {
-        database.removeAccount(target);
-        indicateAddressBookChanged();
-    }
-
-    @Override
-    public synchronized void addAccount(ReadOnlyAccount account) throws DuplicateAccountException {
-        database.addAccount(account);
-        updateFilteredAccountList(PREDICATE_SHOW_ALL_ACCOUNTS);
-        indicateDatabaseChanged();
-    }
-
 ```
 ###### \java\seedu\address\model\ModelManager.java
 ``` java
@@ -1010,6 +1453,9 @@ public class DuplicateReminderException extends DuplicateDataException {
 ```
 ###### \java\seedu\address\model\reminder\exceptions\ReminderNotFoundException.java
 ``` java
+
+package seedu.address.model.reminder.exceptions;
+
 /**
  * Signals that the operation is unable to find the specified reminder.
  */
@@ -1644,6 +2090,193 @@ public class XmlAdaptedReminder {
     }
 }
 ```
+###### \java\seedu\address\ui\BrowserPanel.java
+``` java
+    /**
+     * @param person
+     */
+    private void loadPersonProfile(ReadOnlyPerson person) {
+        try {
+            browserPanel.getChildren().remove(personProfile.getRoot());
+        } catch (Exception e) {
+            logger.info("PersonProfilePanel does not exist");
+        }
+        try {
+            browserPanel.getChildren().remove(displayPanel.getRoot());
+        } catch (Exception e) {
+            logger.info("DisplayPanel does not exist");
+        }
+        try {
+            browserPanel.getChildren().remove(browser.getRoot());
+        } catch (Exception e) {
+            logger.info("BrowserPanel does not exist");
+        }
+
+        personProfile = new PersonProfile(person);
+        browserPanel.getChildren().add(personProfile.getRoot());
+    }
+
+    @Subscribe
+    private void handleShowProfileRequestEvent(ShowProfileRequestEvent event) {
+        logger.info(LogsCenter.getEventHandlingLogMessage(event));
+        loadPersonProfile(event.person);
+    }
+```
+###### \java\seedu\address\ui\PersonProfile.java
+``` java
+
+package seedu.address.ui;
+
+import javafx.beans.binding.Bindings;
+
+import javafx.fxml.FXML;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
+import seedu.address.model.person.ReadOnlyPerson;
+
+/**
+ * An UI component that displays the full profile of a {@code Person}.
+ */
+public class PersonProfile extends UiPart<Region> {
+
+    private static final String FXML = "PersonProfile.fxml";
+
+    public final ReadOnlyPerson person;
+
+    @FXML
+    private HBox profilePane;
+    @FXML
+    private Label profileName;
+    @FXML
+    private TextArea name;
+    @FXML
+    private TextArea birthday;
+    @FXML
+    private TextArea phone;
+    @FXML
+    private TextArea email;
+    @FXML
+    private TextArea address;
+    @FXML
+    private FlowPane tags;
+
+    public PersonProfile(ReadOnlyPerson person) {
+        super(FXML);
+        this.person = person;
+        initTags(person);
+        bindListeners(person);
+    }
+
+    /**
+     * Binds the individual UI elements to observe their respective {@code Person} properties
+     * so that they will be notified of any changes.
+     */
+    private void bindListeners(ReadOnlyPerson person) {
+        profileName.textProperty().bind(Bindings.convert(person.nameProperty()));
+        name.textProperty().bind(Bindings.convert(person.nameProperty()));
+        birthday.textProperty().bind(Bindings.convert(person.birthdayProperty()));
+        phone.textProperty().bind(Bindings.convert(person.phoneProperty()));
+        email.textProperty().bind(Bindings.convert(person.emailProperty()));
+        address.textProperty().bind(Bindings.convert(person.addressProperty()));
+        person.tagProperty().addListener((observable, oldValue, newValue) -> {
+            tags.getChildren().clear();
+            initTags(person);
+        });
+    }
+
+    /**
+     * @param person
+     */
+    private void initTags(ReadOnlyPerson person) {
+        person.getTags().forEach(tag -> {
+            Label tagLabel = new Label(tag.tagName);
+            tags.getChildren().add(tagLabel);
+        });
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        // short circuit if same object
+        if (other == this) {
+            return true;
+        }
+
+        // instanceof handles nulls
+        if (!(other instanceof PersonCard)) {
+            return false;
+        }
+
+        // state check
+        PersonProfile profile = (PersonProfile) other;
+        return person.equals(profile.person);
+    }
+}
+```
+###### \java\seedu\address\ui\ReminderCard.java
+``` java
+    /**
+     * @param reminder
+     */
+    private void initCountdown(ReadOnlyReminder reminder) {
+        // Calculates the day difference between the reminder's date and the current date
+        // Todo: Minus 1 day in day difference if the current time passes the reminder's time
+        final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        LocalDate deadline = LocalDate.parse(reminder.getDate().toString(), dateFormatter);
+        LocalDate currentTime = LocalDate.now();
+        int daysBetween = (int) ChronoUnit.DAYS.between(currentTime, deadline);
+
+        setDaysCountdownBasedOnDays(daysBetween);
+        if (daysBetween >= ORANGE_WARNING_DAYS_LEFT) { // Only start the countdown if the deadline is not overdue
+            startDaysCountdown(deadline);
+        }
+    }
+
+    /**
+     * Starts the countdown.
+     */
+    private void startDaysCountdown(LocalDate date) {
+        final Timer timer = new Timer();
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                LocalDate currentDate = LocalDate.now();
+                int newDaysBetween = (int) ChronoUnit.DAYS.between(currentDate, date);
+                Platform.runLater(() -> setDaysCountdownBasedOnDays(newDaysBetween));
+            }
+        };
+        timer.scheduleAtFixedRate(task, TIMER_DELAY, TIMER_PERIOD);
+    }
+
+    private void setDaysCountdownBasedOnDays(int days) {
+        setDaysCountdownContentBasedOnDays(days);
+        setDaysCountdownColorBasedOnDays(days);
+    }
+
+    private void setDaysCountdownContentBasedOnDays(int days) {
+        if (days > ORANGE_WARNING_DAYS_LEFT) {
+            daysCountdown.setText(days + " day(s)" + " left");
+        } else if (days == ORANGE_WARNING_DAYS_LEFT) {
+            daysCountdown.setText("today");
+        } else {
+            daysCountdown.setText("overdue");
+        }
+    }
+
+    private void setDaysCountdownColorBasedOnDays(int days) {
+        if (days >= GREEN_WARNING_DAYS_LEFT) {
+            daysCountdown.setStyle("-fx-text-fill: " + "greenyellow");
+        } else if (days >= YELLOW_WARNING_DAYS_LEFT) {
+            daysCountdown.setStyle("-fx-text-fill: " + "yellow");
+        } else if (days >= ORANGE_WARNING_DAYS_LEFT) {
+            daysCountdown.setStyle("-fx-text-fill: " + "orange");
+        } else {
+            daysCountdown.setStyle("-fx-text-fill: " + "red");
+        }
+    }
+```
 ###### \java\seedu\address\ui\StatusBarFooter.java
 ``` java
     /**
@@ -1715,7 +2348,7 @@ public class XmlAdaptedReminder {
 }
 
 .opening-img {
-    height: 584px;
+    height: 745px;
 }
 
 #profilePic {
@@ -1752,6 +2385,61 @@ public class XmlAdaptedReminder {
 .reminder_big_label {
     -fx-font-size: 15px;
 }
+```
+###### \resources\view\PersonProfile.fxml
+``` fxml
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+
+<HBox id="profilePane" fx:id="profilePane" maxHeight="500.0" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1">
+   <AnchorPane id="profilePic">
+      <children>
+         <ImageView fitWidth="300.0" layoutX="45.0" nodeOrientation="INHERIT" pickOnBounds="true" preserveRatio="true" AnchorPane.bottomAnchor="50.0" AnchorPane.leftAnchor="45.0" AnchorPane.rightAnchor="45.0" AnchorPane.topAnchor="20.0">
+            <image>
+               <Image url="@../images/gentleman-profile.png" />
+            </image></ImageView>
+          <Label fx:id="profileName" alignment="CENTER" layoutX="60.0" layoutY="178.0" prefHeight="35.0" prefWidth="270.0" styleClass="cell_big_label" text="\$name" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="60.0" AnchorPane.rightAnchor="60.0" />
+      </children>
+   </AnchorPane>
+    <GridPane id="profileInfo" gridLinesVisible="true" HBox.hgrow="ALWAYS">
+        <columnConstraints>
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="150.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="150.0" />
+        </columnConstraints>
+        <rowConstraints>
+            <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
+        </rowConstraints>
+        <children>
+            <Label styleClass="profile_big_label" text="Full Name" GridPane.halignment="CENTER" GridPane.valignment="CENTER" />
+            <Label styleClass="profile_big_label" text="Birthday" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
+            <Label styleClass="profile_big_label" text="Phone Number" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
+            <Label styleClass="profile_big_label" text="Email Address" GridPane.halignment="CENTER" GridPane.rowIndex="3" GridPane.valignment="CENTER" />
+            <Label styleClass="profile_big_label" text="Home Address" GridPane.halignment="CENTER" GridPane.rowIndex="4" GridPane.valignment="CENTER" />
+            <Label styleClass="profile_big_label" text="Tags" GridPane.halignment="CENTER" GridPane.rowIndex="5" GridPane.valignment="CENTER" />
+
+            <TextArea fx:id="name" prefColumnCount="4" prefRowCount="4" styleClass="profile_small_text_area" text="\$name" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.hgrow="ALWAYS" GridPane.valignment="CENTER" />
+            <TextArea fx:id="birthday" prefColumnCount="4" prefRowCount="4" styleClass="profile_small_text_area" text="\$birthday" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
+            <TextArea fx:id="phone" prefColumnCount="4" prefRowCount="4" styleClass="profile_small_text_area" text="\$phone" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.hgrow="ALWAYS" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
+            <TextArea fx:id="email" prefColumnCount="4" prefRowCount="4" styleClass="profile_small_text_area" text="\$email" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.hgrow="ALWAYS" GridPane.rowIndex="3" GridPane.valignment="CENTER" />
+            <TextArea fx:id="address" prefColumnCount="4" prefRowCount="4" styleClass="profile_small_text_area" text="\$address" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.hgrow="ALWAYS" GridPane.rowIndex="4" GridPane.valignment="CENTER" />
+            <FlowPane fx:id="tags" alignment="CENTER" columnHalignment="CENTER" minHeight="30.0" prefHeight="72.0" prefWidth="150.0" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.hgrow="ALWAYS" GridPane.rowIndex="5" GridPane.valignment="CENTER" />
+        </children>
+    </GridPane>
+</HBox>
 ```
 ###### \resources\view\ReminderListPanel.fxml
 ``` fxml

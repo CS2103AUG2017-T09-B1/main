@@ -68,24 +68,6 @@ public class BirthdayCommandTest {
 
         assertCommandSuccess(birthdayCommand, model, expectedMessage, expectedModel);
     }
-    /*
-    @Test
-    public void execute_filteredList_success() throws Exception {
-                showFirstPersonOnly(model);
-
-        ReadOnlyPerson personInFilteredList = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
-        Person editedPerson = new PersonBuilder(personInFilteredList)
-                .withBirthday("01/01/1991").build();
-        BirthdayCommand birthdayCommand = prepareCommand(INDEX_FIRST_PERSON, editedPerson.getBirthday().value);
-
-        String expectedMessage = String.format(BirthdayCommand.MESSAGE_ADD_BIRTHDAY_SUCCESS, editedPerson);
-
-        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
-        expectedModel.updatePerson(model.getFilteredPersonList().get(0), editedPerson);
-
-        assertCommandSuccess(birthdayCommand, model, expectedMessage, expectedModel);
-    }
-    */
 
     @Test
     public void execute_invalidPersonIndexUnfilteredList_failure() throws Exception {
@@ -857,6 +839,7 @@ public class SortPriorityCommandTest {
 package seedu.address.logic.parser;
 
 import static seedu.address.commons.core.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
+import static seedu.address.logic.commands.CommandTestUtil.BIRTHDAY_DESC_JOHN;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_BIRTHDAY;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
@@ -893,6 +876,13 @@ public class BirthdayCommandParserTest {
 
         // nothing at all
         assertParseFailure(parser, BirthdayCommand.COMMAND_WORD, expectedMessage);
+    }
+
+    @Test
+    public void parse_invalidBirthday() throws Exception {
+        String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, BirthdayCommand.MESSAGE_USAGE);
+        // Invalid birthday
+        assertParseFailure(parser, BirthdayCommand.COMMAND_WORD + BIRTHDAY_DESC_JOHN, expectedMessage);
     }
 }
 ```
@@ -1081,6 +1071,24 @@ public class BirthdayTest {
         // different person -> returns false
         Birthday differentBirthday = new Birthday("02/02/1992");
         assertFalse(birthday.equals(differentBirthday));
+
+        // Non-existent birthday -> returns false
+        assertFalse(Birthday.isValidBirthday("99/99/9999"));
+    }
+
+    @Test
+    public void validBirthday() {
+        // invalid date
+        assertTrue(Birthday.isValidBirthday("")); // empty string
+        assertTrue(Birthday.isValidBirthday("01/01/1991"));  // valid date
+
+        assertFalse(Birthday.isValidBirthday("0d/fd/199g")); // contains non-numeric characters
+        assertFalse(Birthday.isValidBirthday("10/28/1999 ")); // wrong date format
+        assertFalse(Birthday.isValidBirthday("1/1/1994")); // Insufficient digits
+        assertFalse(Birthday.isValidBirthday("40/01/1994")); // invalid day
+        assertFalse(Birthday.isValidBirthday("01/16/1995")); // invalid month
+        assertFalse(Birthday.isValidBirthday("01/01/20000")); // invalid year
+
     }
 }
 ```
