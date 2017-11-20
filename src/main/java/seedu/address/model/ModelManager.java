@@ -310,7 +310,6 @@ public class ModelManager extends ComponentManager implements Model {
     }
     //@@author
 
-    //@@author inGall
     /**
      * @param contactList
      * @throws CommandException
@@ -374,5 +373,5 @@ public class ModelManager extends ComponentManager implements Model {
             throw new CommandException(MESSAGE_DUPLICATE_REMINDER);
         }
     }
-    //@@author
+
 }
